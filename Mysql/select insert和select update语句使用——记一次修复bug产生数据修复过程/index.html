@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"supportmen.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="在一次数据由bug引起数据混乱后的修复过程中，需要使用select insert和select update联合语句来进行数据插入和修改，记录一下这次修复过程的思路。 数据例子建表123456CREATE TABLE &#96;stock_io_info&#96; (  &#96;id&#96; int(11) NOT NULL AUTO_INCREMENT COMMENT &#39;主键&amp;#39">
+<meta property="og:type" content="article">
+<meta property="og:title" content="select insert和select update语句使用——记一次修复bug产生数据修复过程">
+<meta property="og:url" content="http://supportmen.github.io/Mysql/select%20insert%E5%92%8Cselect%20update%E8%AF%AD%E5%8F%A5%E4%BD%BF%E7%94%A8%E2%80%94%E2%80%94%E8%AE%B0%E4%B8%80%E6%AC%A1%E4%BF%AE%E5%A4%8Dbug%E4%BA%A7%E7%94%9F%E6%95%B0%E6%8D%AE%E4%BF%AE%E5%A4%8D%E8%BF%87%E7%A8%8B/index.html">
+<meta property="og:site_name" content="supportman">
+<meta property="og:description" content="在一次数据由bug引起数据混乱后的修复过程中，需要使用select insert和select update联合语句来进行数据插入和修改，记录一下这次修复过程的思路。 数据例子建表123456CREATE TABLE &#96;stock_io_info&#96; (  &#96;id&#96; int(11) NOT NULL AUTO_INCREMENT COMMENT &#39;主键&amp;#39">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="data:image/png;base64,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">
+<meta property="og:image" content="data:image/png;base64,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">
+<meta property="article:published_time" content="2020-04-16T07:05:34.000Z">
+<meta property="article:modified_time" content="2020-12-07T01:07:29.794Z">
+<meta property="article:author" content="supportman">
+<meta property="article:tag" content="Mysql">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="data:image/png;base64,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">
+
+<link rel="canonical" href="http://supportmen.github.io/Mysql/select%20insert%E5%92%8Cselect%20update%E8%AF%AD%E5%8F%A5%E4%BD%BF%E7%94%A8%E2%80%94%E2%80%94%E8%AE%B0%E4%B8%80%E6%AC%A1%E4%BF%AE%E5%A4%8Dbug%E4%BA%A7%E7%94%9F%E6%95%B0%E6%8D%AE%E4%BF%AE%E5%A4%8D%E8%BF%87%E7%A8%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>select insert和select update语句使用——记一次修复bug产生数据修复过程 | supportman</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">supportman</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">supportman的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-music">
+
+    <a href="/music/" rel="section"><i class="fa fa-fw fa-music"></i>音乐</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://supportmen.github.io/Mysql/select%20insert%E5%92%8Cselect%20update%E8%AF%AD%E5%8F%A5%E4%BD%BF%E7%94%A8%E2%80%94%E2%80%94%E8%AE%B0%E4%B8%80%E6%AC%A1%E4%BF%AE%E5%A4%8Dbug%E4%BA%A7%E7%94%9F%E6%95%B0%E6%8D%AE%E4%BF%AE%E5%A4%8D%E8%BF%87%E7%A8%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="supportman">
+      <meta itemprop="description" content="supportman的个人博客">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="supportman">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          select insert和select update语句使用——记一次修复bug产生数据修复过程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-04-16 15:05:34" itemprop="dateCreated datePublished" datetime="2020-04-16T15:05:34+08:00">2020-04-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-12-07 09:07:29" itemprop="dateModified" datetime="2020-12-07T09:07:29+08:00">2020-12-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在一次数据由bug引起数据混乱后的修复过程中，需要使用select insert和select update联合语句来进行数据插入和修改，记录一下这次修复过程的思路。</p>
+<h3 id="数据例子"><a href="#数据例子" class="headerlink" title="数据例子"></a>数据例子</h3><h4 id="建表"><a href="#建表" class="headerlink" title="建表"></a>建表</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE &#96;stock_io_info&#96; (</span><br><span class="line">  &#96;id&#96; int(11) NOT NULL AUTO_INCREMENT COMMENT &#39;主键&#39;,</span><br><span class="line">  &#96;stock_id&#96; int(11) NOT NULL COMMENT &#39;仓库id&#39;,</span><br><span class="line">  &#96;product_id&#96; int(11) NOT NULL COMMENT &#39;产品id&#39;,  </span><br><span class="line">  PRIMARY KEY (&#96;id&#96;)  </span><br><span class="line">) ENGINE&#x3D;InnoDB AUTO_INCREMENT&#x3D;1 DEFAULT CHARSET&#x3D;utf8 COMMENT&#x3D;&#39;产品进出库表&#39;;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE &#96;product_info&#96; (</span><br><span class="line">  &#96;id&#96; int(11) NOT NULL AUTO_INCREMENT COMMENT &#39;主键&#39;,</span><br><span class="line">  &#96;stock_id&#96; int(11) NOT NULL COMMENT &#39;所属仓库id&#39;,  </span><br><span class="line">  &#96;product_name&#96; varchar(256) NOT NULL COMMENT &#39;产品名&#39;,  </span><br><span class="line">  PRIMARY KEY (&#96;id&#96;)  </span><br><span class="line">) ENGINE&#x3D;InnoDB AUTO_INCREMENT&#x3D;1 DEFAULT CHARSET&#x3D;utf8 COMMENT&#x3D;&#39;产品表&#39;;</span><br></pre></td></tr></table></figure>
+<h4 id="插入例子数据"><a href="#插入例子数据" class="headerlink" title="插入例子数据"></a>插入例子数据</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">INSERT INTO &#96;product_info&#96; (&#96;id&#96;, &#96;stock_id&#96;, &#96;product_name&#96;) VALUES (&#39;1&#39;, &#39;1&#39;, &#39;产品1&#39;);</span><br><span class="line">INSERT INTO &#96;product_info&#96; (&#96;id&#96;, &#96;stock_id&#96;, &#96;product_name&#96;) VALUES (&#39;2&#39;, &#39;1&#39;, &#39;产品2&#39;);</span><br><span class="line">INSERT INTO &#96;product_info&#96; (&#96;id&#96;, &#96;stock_id&#96;, &#96;product_name&#96;) VALUES (&#39;3&#39;, &#39;1&#39;, &#39;产品3&#39;);</span><br><span class="line">INSERT INTO &#96;product_info&#96; (&#96;id&#96;, &#96;stock_id&#96;, &#96;product_name&#96;) VALUES (&#39;4&#39;, &#39;2&#39;, &#39;产品4&#39;);</span><br><span class="line">INSERT INTO &#96;product_info&#96; (&#96;id&#96;, &#96;stock_id&#96;, &#96;product_name&#96;) VALUES (&#39;5&#39;, &#39;2&#39;, &#39;产品5&#39;);</span><br><span class="line">INSERT INTO &#96;product_info&#96; (&#96;id&#96;, &#96;stock_id&#96;, &#96;product_name&#96;) VALUES (&#39;6&#39;, &#39;2&#39;, &#39;产品6&#39;);</span><br><span class="line"></span><br><span class="line">INSERT INTO &#96;stock_io_info&#96; (&#96;id&#96;, &#96;stock_id&#96;, &#96;product_id&#96;) VALUES (&#39;1&#39;, &#39;1&#39;, &#39;1&#39;);</span><br><span class="line">INSERT INTO &#96;stock_io_info&#96; (&#96;id&#96;, &#96;stock_id&#96;, &#96;product_id&#96;) VALUES (&#39;2&#39;, &#39;2&#39;, &#39;1&#39;);</span><br><span class="line">INSERT INTO &#96;stock_io_info&#96; (&#96;id&#96;, &#96;stock_id&#96;, &#96;product_id&#96;) VALUES (&#39;3&#39;, &#39;2&#39;, &#39;1&#39;);</span><br><span class="line">INSERT INTO &#96;stock_io_info&#96; (&#96;id&#96;, &#96;stock_id&#96;, &#96;product_id&#96;) VALUES (&#39;4&#39;, &#39;2&#39;, &#39;3&#39;);</span><br><span class="line">INSERT INTO &#96;stock_io_info&#96; (&#96;id&#96;, &#96;stock_id&#96;, &#96;product_id&#96;) VALUES (&#39;5&#39;, &#39;1&#39;, &#39;4&#39;);</span><br><span class="line">INSERT INTO &#96;stock_io_info&#96; (&#96;id&#96;, &#96;stock_id&#96;, &#96;product_id&#96;) VALUES (&#39;6&#39;, &#39;1&#39;, &#39;4&#39;);</span><br><span class="line">INSERT INTO &#96;stock_io_info&#96; (&#96;id&#96;, &#96;stock_id&#96;, &#96;product_id&#96;) VALUES (&#39;7&#39;, &#39;1&#39;, &#39;6&#39;);</span><br><span class="line">INSERT INTO &#96;stock_io_info&#96; (&#96;id&#96;, &#96;stock_id&#96;, &#96;product_id&#96;) VALUES (&#39;8&#39;, &#39;2&#39;, &#39;4&#39;);</span><br><span class="line">INSERT INTO &#96;stock_io_info&#96; (&#96;id&#96;, &#96;stock_id&#96;, &#96;product_id&#96;) VALUES (&#39;9&#39;, &#39;2&#39;, &#39;5&#39;);</span><br></pre></td></tr></table></figure>
+<h3 id="需求"><a href="#需求" class="headerlink" title="需求"></a>需求</h3><p>建立了两张表，一张为产品进出库表，一张为产品表。每一个产品，都有所属的仓库，其他仓库不能调用。由于系统bug，产生了进出库调用其他仓库产品的情况，需要修复这样的数据。</p>
+<h3 id="处理过程"><a href="#处理过程" class="headerlink" title="处理过程"></a>处理过程</h3><h4 id="第一步：查出错误数据，明确那些条目需要修改"><a href="#第一步：查出错误数据，明确那些条目需要修改" class="headerlink" title="第一步：查出错误数据，明确那些条目需要修改"></a>第一步：查出错误数据，明确那些条目需要修改</h4><p>思路：进出库表左联产品表，筛选出<code>stock_id</code>不一致的条目。<br>sql语句：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">SELECT</span><br><span class="line">    *</span><br><span class="line">FROM</span><br><span class="line">    stock_io_info sii</span><br><span class="line">        LEFT JOIN</span><br><span class="line">    product_info pi ON sii.product_id &#x3D; pi.id</span><br><span class="line">WHERE</span><br><span class="line">    sii.stock_id !&#x3D; pi.stock_id;</span><br></pre></td></tr></table></figure>
+<p>结果如图：<br><img src="data:image/png;base64,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" alt="需要修改的条目"></p>
+<h4 id="第二步：补充产品数据"><a href="#第二步：补充产品数据" class="headerlink" title="第二步：补充产品数据"></a>第二步：补充产品数据</h4><p>如果直接进行修改，会造成进出库数据产品为空，因为仓库内没有产品与之匹配，所以需要补充产品数据。<br>思路：采用select insert联合语句进行数据插入，需要知道在哪个仓库插入和哪个产品相同的产品信息。<br>过程：<br>加入distinct去重，每个产品只需添加一个。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">SELECT DISTINCT</span><br><span class="line">    sii.stock_id, sii.product_id</span><br><span class="line">FROM</span><br><span class="line">    stock_io_info sii</span><br><span class="line">        LEFT JOIN</span><br><span class="line">    product_info pi ON sii.product_id &#x3D; pi.id</span><br><span class="line">WHERE</span><br><span class="line">    sii.stock_id !&#x3D; pi.stock_id;</span><br></pre></td></tr></table></figure>
+<p>结果如下：</p>
+<table>
+<thead>
+<tr>
+<th>stock_id</th>
+<th>product_id</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2</td>
+<td>1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>3</td>
+</tr>
+<tr>
+<td>1</td>
+<td>4</td>
+</tr>
+<tr>
+<td>1</td>
+<td>6</td>
+</tr>
+</tbody></table>
+<p>总共需要插入4行产品，以第一行为例，需要在2仓库插入一个和1产品除了仓库id为2其他字段完全一致的产品。<br>使用下面的语句插入：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Insert into product_info(&#96;stock_id&#96;, &#96;product_name&#96;)</span><br><span class="line">SELECT</span><br><span class="line">    A.stock_id, B.product_name</span><br><span class="line">FROM</span><br><span class="line">    (SELECT DISTINCT</span><br><span class="line">        sii.stock_id, sii.product_id</span><br><span class="line">    FROM</span><br><span class="line">        stock_io_info sii</span><br><span class="line">    LEFT JOIN product_info pi ON sii.product_id &#x3D; pi.id</span><br><span class="line">    WHERE</span><br><span class="line">        sii.stock_id !&#x3D; pi.stock_id) A</span><br><span class="line">        LEFT JOIN</span><br><span class="line">    product_info B ON B.id &#x3D; A.product_id;</span><br></pre></td></tr></table></figure>
+<p>插入后产品表结果如下：</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>stock_id</th>
+<th>product_name</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>1</td>
+<td>产品1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>1</td>
+<td>产品2</td>
+</tr>
+<tr>
+<td>3</td>
+<td>1</td>
+<td>产品3</td>
+</tr>
+<tr>
+<td>4</td>
+<td>2</td>
+<td>产品4</td>
+</tr>
+<tr>
+<td>5</td>
+<td>2</td>
+<td>产品5</td>
+</tr>
+<tr>
+<td>6</td>
+<td>2</td>
+<td>产品6</td>
+</tr>
+<tr>
+<td>7</td>
+<td>2</td>
+<td>产品1</td>
+</tr>
+<tr>
+<td>8</td>
+<td>2</td>
+<td>产品3</td>
+</tr>
+<tr>
+<td>9</td>
+<td>1</td>
+<td>产品4</td>
+</tr>
+<tr>
+<td>10</td>
+<td>1</td>
+<td>产品6</td>
+</tr>
+</tbody></table>
+<h4 id="第三步：修改产品数据"><a href="#第三步：修改产品数据" class="headerlink" title="第三步：修改产品数据"></a>第三步：修改产品数据</h4><p>需要将进出库表中的第一步查询出来的行，修改产品id为匹配的新插入的产品。<br>思路：第一步sql的基础上，左联产品表，产品id需要大于6，匹配产品名称即可查出。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">SELECT</span><br><span class="line">    *</span><br><span class="line">FROM</span><br><span class="line">    stock_io_info sii</span><br><span class="line">        LEFT JOIN</span><br><span class="line">    product_info pi ON sii.product_id &#x3D; pi.id</span><br><span class="line">        LEFT JOIN</span><br><span class="line">    product_info pi2 ON pi.product_name &#x3D; pi2.product_name</span><br><span class="line">        AND pi2.id &gt; 6</span><br><span class="line">WHERE</span><br><span class="line">    sii.stock_id !&#x3D; pi.stock_id;</span><br></pre></td></tr></table></figure>
+<p>结果如下:<br><img src="data:image/png;base64,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" alt="图片2">  </p>
+<p>只需要知道：那个仓库的哪个产品id，需要更改为哪个即可，所以对上面的sql进行字段删减</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">SELECT DISTINCT</span><br><span class="line">    sii.stock_id stock_id, sii.product_id, pi2.id after_product_id</span><br><span class="line">FROM</span><br><span class="line">    stock_io_info sii</span><br><span class="line">        LEFT JOIN</span><br><span class="line">    product_info pi ON sii.product_id &#x3D; pi.id</span><br><span class="line">        LEFT JOIN</span><br><span class="line">    product_info pi2 ON pi.product_name &#x3D; pi2.product_name</span><br><span class="line">        AND pi2.id &gt; 6</span><br><span class="line">WHERE</span><br><span class="line">    sii.stock_id !&#x3D; pi.stock_id;</span><br></pre></td></tr></table></figure>
+<p>结果如下：</p>
+<table>
+<thead>
+<tr>
+<th>stock_id</th>
+<th>product_id</th>
+<th>after_product_id</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2</td>
+<td>1</td>
+<td>7</td>
+</tr>
+<tr>
+<td>2</td>
+<td>3</td>
+<td>8</td>
+</tr>
+<tr>
+<td>1</td>
+<td>4</td>
+<td>9</td>
+</tr>
+<tr>
+<td>1</td>
+<td>6</td>
+<td>10</td>
+</tr>
+</tbody></table>
+<p>第一行的意思为，进出库表仓库为2，产品为1的行，需要改成产品为7。<br>思路：update后面把需要修改的表和对照表（上面的表，有条件和想要修改成的结果）都放上，按条件匹配即可。<br>使用下面的sql进行修改：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">UPDATE stock_io_info A,</span><br><span class="line">    (SELECT DISTINCT</span><br><span class="line">        sii.stock_id stock_id,</span><br><span class="line">            sii.product_id,</span><br><span class="line">            pi2.id after_product_id</span><br><span class="line">    FROM</span><br><span class="line">        stock_io_info sii</span><br><span class="line">    LEFT JOIN product_info pi ON sii.product_id &#x3D; pi.id</span><br><span class="line">    LEFT JOIN product_info pi2 ON pi.product_name &#x3D; pi2.product_name</span><br><span class="line">        AND pi2.id &gt; 6</span><br><span class="line">    WHERE</span><br><span class="line">        sii.stock_id !&#x3D; pi.stock_id) B</span><br><span class="line">SET</span><br><span class="line">    A.product_id &#x3D; B.after_product_id</span><br><span class="line">WHERE</span><br><span class="line">    A.stock_id &#x3D; B.stock_id</span><br><span class="line">        AND A.product_id &#x3D; B.product_id;</span><br></pre></td></tr></table></figure>
+<p>完成。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>supportman
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://supportmen.github.io/Mysql/select%20insert%E5%92%8Cselect%20update%E8%AF%AD%E5%8F%A5%E4%BD%BF%E7%94%A8%E2%80%94%E2%80%94%E8%AE%B0%E4%B8%80%E6%AC%A1%E4%BF%AE%E5%A4%8Dbug%E4%BA%A7%E7%94%9F%E6%95%B0%E6%8D%AE%E4%BF%AE%E5%A4%8D%E8%BF%87%E7%A8%8B/" title="select insert和select update语句使用——记一次修复bug产生数据修复过程">http://supportmen.github.io/Mysql/select insert和select update语句使用——记一次修复bug产生数据修复过程/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Mysql/" rel="tag"># Mysql</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/Mysql/%E3%80%90%E8%BD%AC%E8%BD%BD%E3%80%91MySQL%E6%95%B0%E6%8D%AE%E5%BA%93%E5%90%8C%E6%97%B6%E6%9F%A5%E8%AF%A2%E6%9B%B4%E6%96%B0%E5%90%8C%E4%B8%80%E5%BC%A0%E8%A1%A8/" rel="prev" title="【转载】MySQL数据库同时查询更新同一张表">
+      <i class="fa fa-chevron-left"></i> 【转载】MySQL数据库同时查询更新同一张表
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/Mysql/%E3%80%90%E8%BD%AC%E8%BD%BD%E3%80%91SELECT%20INTO%20%E5%92%8C%20INSERT%20INTO%20SELECT%20%E4%B8%A4%E7%A7%8D%E8%A1%A8%E5%A4%8D%E5%88%B6%E8%AF%AD%E5%8F%A5/" rel="next" title="【转载】SELECT INTO 和 INSERT INTO SELECT 两种表复制语句">
+      【转载】SELECT INTO 和 INSERT INTO SELECT 两种表复制语句 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#数据例子"><span class="nav-number">1.</span> <span class="nav-text">数据例子</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#建表"><span class="nav-number">1.1.</span> <span class="nav-text">建表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#插入例子数据"><span class="nav-number">1.2.</span> <span class="nav-text">插入例子数据</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#需求"><span class="nav-number">2.</span> <span class="nav-text">需求</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#处理过程"><span class="nav-number">3.</span> <span class="nav-text">处理过程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#第一步：查出错误数据，明确那些条目需要修改"><span class="nav-number">3.1.</span> <span class="nav-text">第一步：查出错误数据，明确那些条目需要修改</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#第二步：补充产品数据"><span class="nav-number">3.2.</span> <span class="nav-text">第二步：补充产品数据</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#第三步：修改产品数据"><span class="nav-number">3.3.</span> <span class="nav-text">第三步：修改产品数据</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">supportman</p>
+  <div class="site-description" itemprop="description">supportman的个人博客</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">16</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">supportman</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

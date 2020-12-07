@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"supportmen.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="背景在使用百度地图进行点位标注时，很多人喜欢用Market进行标注。Marker 此类表示地图上一个图像标注。     构造函数  Marker(point: Point , opts: MarkerOptions )  创建一个图像标注实例。point参数指定了图像标注所在的地理位置 因为Market类提供的方法多，如可换标注图标等等，是常用的百度地图api类。但该类有一个非常大的缺陷，当点位超">
+<meta property="og:type" content="article">
+<meta property="og:title" content="百度地图api加载大量点位卡顿问题解决方案">
+<meta property="og:url" content="http://supportmen.github.io/js/%E7%99%BE%E5%BA%A6%E5%9C%B0%E5%9B%BE/%E7%99%BE%E5%BA%A6%E5%9C%B0%E5%9B%BEapi%E5%8A%A0%E8%BD%BD%E5%A4%A7%E9%87%8F%E7%82%B9%E4%BD%8D%E5%8D%A1%E9%A1%BF%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/index.html">
+<meta property="og:site_name" content="supportman">
+<meta property="og:description" content="背景在使用百度地图进行点位标注时，很多人喜欢用Market进行标注。Marker 此类表示地图上一个图像标注。     构造函数  Marker(point: Point , opts: MarkerOptions )  创建一个图像标注实例。point参数指定了图像标注所在的地理位置 因为Market类提供的方法多，如可换标注图标等等，是常用的百度地图api类。但该类有一个非常大的缺陷，当点位超">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-06-10T10:33:45.000Z">
+<meta property="article:modified_time" content="2020-12-07T01:06:34.865Z">
+<meta property="article:author" content="supportman">
+<meta property="article:tag" content="js">
+<meta property="article:tag" content="百度地图">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://supportmen.github.io/js/%E7%99%BE%E5%BA%A6%E5%9C%B0%E5%9B%BE/%E7%99%BE%E5%BA%A6%E5%9C%B0%E5%9B%BEapi%E5%8A%A0%E8%BD%BD%E5%A4%A7%E9%87%8F%E7%82%B9%E4%BD%8D%E5%8D%A1%E9%A1%BF%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>百度地图api加载大量点位卡顿问题解决方案 | supportman</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">supportman</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">supportman的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-music">
+
+    <a href="/music/" rel="section"><i class="fa fa-fw fa-music"></i>音乐</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://supportmen.github.io/js/%E7%99%BE%E5%BA%A6%E5%9C%B0%E5%9B%BE/%E7%99%BE%E5%BA%A6%E5%9C%B0%E5%9B%BEapi%E5%8A%A0%E8%BD%BD%E5%A4%A7%E9%87%8F%E7%82%B9%E4%BD%8D%E5%8D%A1%E9%A1%BF%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="supportman">
+      <meta itemprop="description" content="supportman的个人博客">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="supportman">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          百度地图api加载大量点位卡顿问题解决方案
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-06-10 18:33:45" itemprop="dateCreated datePublished" datetime="2020-06-10T18:33:45+08:00">2020-06-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-12-07 09:06:34" itemprop="dateModified" datetime="2020-12-07T09:06:34+08:00">2020-12-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/js/" itemprop="url" rel="index"><span itemprop="name">js</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/js/%E7%99%BE%E5%BA%A6%E5%9C%B0%E5%9B%BE/" itemprop="url" rel="index"><span itemprop="name">百度地图</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>在使用百度地图进行点位标注时，很多人喜欢用Market进行标注。<br><code>Marker
+此类表示地图上一个图像标注。    
+构造函数  Marker(point: Point , opts: MarkerOptions )  创建一个图像标注实例。point参数指定了图像标注所在的地理位置</code></p>
+<p>因为Market类提供的方法多，如可换标注图标等等，是常用的百度地图api类。但该类有一个非常大的缺陷，当点位超过1000个之后，会造成加载时间过长、地图拖动卡顿等现象，无法使用。</p>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><h4 id="技术一：加载海量点"><a href="#技术一：加载海量点" class="headerlink" title="技术一：加载海量点"></a>技术一：加载海量点</h4><p>参考：<a href="http://lbsyun.baidu.com/jsdemo.htm#c1_19" target="_blank" rel="noopener">http://lbsyun.baidu.com/jsdemo.htm#c1_19</a></p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">addPoints</span>(<span class="params">data, paramValue</span>)</span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (<span class="built_in">document</span>.createElement(<span class="string">'canvas'</span>).getContext) &#123;</span><br><span class="line">    <span class="keyword">var</span> points = [];  </span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; data.length; i++) &#123;</span><br><span class="line">      points.push(<span class="keyword">new</span> BMap.Point(data[i].pointLon, data[i].pointLat)); <span class="comment">//将所有点位放进数组中</span></span><br><span class="line">      <span class="keyword">var</span> options = &#123;</span><br><span class="line">		           size: BMAP_POINT_SIZE_NORMAL,</span><br><span class="line">		           shape: BMAP_POINT_SHAPE_CIRCLE,</span><br><span class="line">		           color: <span class="string">'#ff6633'</span></span><br><span class="line">		       &#125; <span class="comment">// 点位配置</span></span><br><span class="line">		  <span class="keyword">var</span> pointCollection = <span class="keyword">new</span> BMap.PointCollection(points, options);</span><br><span class="line">      <span class="comment">// 添加点击事件</span></span><br><span class="line">      pointCollectionGoing.addEventListener(<span class="string">'click'</span>, <span class="function"><span class="keyword">function</span> (<span class="params">e</span>) </span>&#123;</span><br><span class="line">          <span class="comment">// 循环查出当前点位坐标对应的data值</span></span><br><span class="line">          <span class="keyword">for</span> (<span class="keyword">var</span> j = <span class="number">0</span>; j &lt; data.length; j++) &#123;							</span><br><span class="line">            <span class="keyword">if</span>(data[j].pointLon==e.point.lng&amp;&amp;data[j].pointLat==e.point.lat)&#123;<span class="comment">// 经度==点击的,维度</span></span><br><span class="line">            	<span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="keyword">var</span> content = <span class="string">""</span>;</span><br><span class="line">          content = <span class="string">"&lt;ul style='list-style: none'&gt;"</span></span><br><span class="line">		   					+ <span class="string">"&lt;li&gt;点位名称:"</span> + data[j].pointName + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">		   					+ <span class="string">"&lt;li&gt;点位位置:"</span> + data[j].pointAddr + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">		   					+ <span class="string">"&lt;li&gt;点位状态:"</span> + data[j].onlineStatusName + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">		   					+ <span class="string">"&lt;li&gt;掉线原因:"</span> + data[j].offlineReason + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">		   					+ <span class="string">"&lt;li&gt;经度:"</span> + data[j].pointLon + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">		   					+ <span class="string">"&lt;li&gt;纬度:"</span> + data[j].pointLat + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">		   					+ <span class="string">"&lt;li&gt;点位号:"</span> + data[j].pointNum + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">		   					+ <span class="string">'&lt;a href="javascript:showPointDetail(\''</span>+data[j].pointInfoId+<span class="string">'\',\'展示《'</span>+data[j].pointName+<span class="string">'》详情信息\',\'[[$&#123;formID&#125;]] \')"&gt;详细信息&lt;/a&gt;'</span></span><br><span class="line">		   					+ <span class="string">'&lt;a style="float:right;" href="javascript:editPointDetail(\''</span>+data[j].pointInfoId+<span class="string">'\',\'修改《'</span>+data[j].pointName +<span class="string">'》详情信息\',\'[[$&#123;formID&#125;]] \')"&gt;修改&lt;/a&gt;'</span></span><br><span class="line">		   					+<span class="string">"&lt;/ul&gt;"</span>;		   			</span><br><span class="line">		  			<span class="keyword">var</span> infoWindow = <span class="keyword">new</span> BMap.InfoWindow(content);  <span class="comment">// 创建信息窗口对象</span></span><br><span class="line">		  			<span class="built_in">window</span>[<span class="string">"map"</span>+<span class="string">"[[$&#123;formID&#125;]]"</span>].openInfoWindow(infoWindow,point); <span class="comment">//开启信息窗口</span></span><br><span class="line">     &#125;);</span><br><span class="line">     <span class="built_in">window</span>[<span class="string">"map"</span>+<span class="string">"[[$&#123;formID&#125;]]"</span>].addOverlay(pointCollection);  <span class="comment">// 添加Overlay</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">      alert(<span class="string">'请在chrome、safari、IE8+以上浏览器查看本示例'</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这时点位加载速度会提升很大，2000个点秒加载，而使用Markers则在5秒以上才能加载完成。</p>
+<p>如果需要在点位上加文本标示，如：<a href="http://lbsyun.baidu.com/jsdemo.htm#c1_14" target="_blank" rel="noopener">http://lbsyun.baidu.com/jsdemo.htm#c1_14</a><br>使用上面链接demo中的方法，循环加载即可，但又会造成加载缓慢，而且页面卡顿的情况，所以要用到下面的技术。</p>
+<h4 id="技术二：动态加载label"><a href="#技术二：动态加载label" class="headerlink" title="技术二：动态加载label"></a>技术二：动态加载label</h4><ul>
+<li>整体思路：地图添加拖拽和放缩的响应方法，当地图界面范围发生变化时，获取当前地图四个角落点的坐标值，判断在此坐标范围内的点，如超过500个（500个以内的Label添加在一秒以内，在多会影响速度，也没有意义，因为Label会叠加在一起，完全看不清楚），则不显示Label，如果在此坐标范围内的点不超过500个，则显示label，地图范围外的label不显示。这样可以最大程度的减少地图上的label数量，可以使地图流畅拖拽。注意，加载时间绝大部分是发生在向地图上添加label的这个动作，所以要分批添加点位，每次500个左右，另外，如果添加后随即隐藏，也可以减少一半以上的加载时间。</li>
+</ul>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br></pre></td><td class="code"><pre><span class="line">  <span class="comment">//地图绑定拖拽事件</span></span><br><span class="line">  <span class="built_in">window</span>[<span class="string">"map"</span>+<span class="string">"[[$&#123;formID&#125;]]"</span>].addEventListener(<span class="string">'dragend'</span>, <span class="function"><span class="keyword">function</span>(<span class="params">e</span>)</span>&#123;</span><br><span class="line">      getBounds(<span class="string">'dragend'</span>);</span><br><span class="line">  &#125;);</span><br><span class="line">  <span class="comment">//地图绑定滚动事件</span></span><br><span class="line">  <span class="built_in">window</span>[<span class="string">"map"</span>+<span class="string">"[[$&#123;formID&#125;]]"</span>].addEventListener(<span class="string">'zoomend'</span>, <span class="function"><span class="keyword">function</span>(<span class="params">e</span>)</span>&#123;</span><br><span class="line">      getBounds(<span class="string">'zoomend'</span>);</span><br><span class="line">  &#125;);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 获取可视区域     </span></span><br><span class="line"><span class="comment">   * */</span></span><br><span class="line">  <span class="function"><span class="keyword">function</span> <span class="title">getBounds</span>(<span class="params">type</span>)</span>&#123;       </span><br><span class="line">      <span class="keyword">var</span> bounds =  <span class="built_in">window</span>[<span class="string">"map"</span>+<span class="string">"[[$&#123;formID&#125;]]"</span>].getBounds(),   <span class="comment">//获取可视区域</span></span><br><span class="line">      SouthWest = bounds.getSouthWest(),   <span class="comment">//可视区域左下角</span></span><br><span class="line">      NorthEast = bounds.getNorthEast();   <span class="comment">//可视区域右上角         </span></span><br><span class="line">      <span class="comment">//处理显示与隐藏的marker</span></span><br><span class="line">      <span class="keyword">var</span> data=boundsShow(SouthWest.lng,NorthEast.lng,SouthWest.lat,NorthEast.lat);</span><br><span class="line">      <span class="comment">//把不在可视区域的maker隐藏起来</span></span><br><span class="line">      <span class="keyword">for</span>(<span class="keyword">var</span> i=<span class="number">0</span>,lengths=data.listhide.length;i&lt;lengths;i++)&#123;</span><br><span class="line">          data.listhide[i].hide();</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">   <span class="comment">/**</span></span><br><span class="line"><span class="comment">    * 在可视区域显示，不在可视区域隐藏</span></span><br><span class="line"><span class="comment">    * <span class="doctag">@smlng <span class="type">&#123;number&#125;</span> </span>小 经度</span></span><br><span class="line"><span class="comment">    * <span class="doctag">@bglng <span class="type">&#123;number&#125;</span> </span>大 经度</span></span><br><span class="line"><span class="comment">    * <span class="doctag">@smlat <span class="type">&#123;number&#125;</span> </span>小纬度</span></span><br><span class="line"><span class="comment">    * <span class="doctag">@bglat <span class="type">&#123;number&#125;</span> </span>大纬度</span></span><br><span class="line"><span class="comment">    *</span></span><br><span class="line"><span class="comment">    * return 返回显示的数量与隐藏的数量</span></span><br><span class="line"><span class="comment">    * */</span></span><br><span class="line">   <span class="function"><span class="keyword">function</span> <span class="title">boundsShow</span>(<span class="params">smlng,bglng,smlat,bglat</span>)</span>&#123;</span><br><span class="line">       <span class="keyword">var</span> listhide=[],<span class="comment">//隐藏的数据</span></span><br><span class="line">           listshow=[];<span class="comment">//显示的数据</span></span><br><span class="line">       <span class="keyword">var</span> temp = <span class="number">0</span>;</span><br><span class="line">       <span class="keyword">for</span>(i <span class="keyword">in</span> labels)&#123;          	</span><br><span class="line">           <span class="keyword">var</span> _point=labels[i].point;             </span><br><span class="line">           <span class="keyword">if</span>(smlng&lt;_point.lng &amp;&amp; _point.lng&lt;bglng &amp;&amp; smlat&lt;_point.lat &amp;&amp; _point.lat &lt; bglat)&#123;</span><br><span class="line">               <span class="comment">//显示</span></span><br><span class="line">               <span class="keyword">if</span>(temp &gt; <span class="number">500</span>)&#123; <span class="comment">//每次只添加502个</span></span><br><span class="line">              	 <span class="keyword">continue</span>;</span><br><span class="line">               &#125;                </span><br><span class="line">               temp++;</span><br><span class="line">               <span class="built_in">window</span>[<span class="string">"map"</span>+<span class="string">"[[$&#123;formID&#125;]]"</span>].addOverlay(labels[i]);</span><br><span class="line">               labels[i].hide();</span><br><span class="line">               labelsHasAdded.push(labels[i]);</span><br><span class="line">               <span class="keyword">delete</span> labels[i];                                </span><br><span class="line">           &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">               <span class="comment">//不显示</span></span><br><span class="line">               listhide.push(labels[i]);</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;             </span><br><span class="line"></span><br><span class="line">       <span class="keyword">for</span>(i <span class="keyword">in</span> labelsHasAdded)&#123;</span><br><span class="line">      	 <span class="keyword">var</span> _point=labelsHasAdded[i].point;</span><br><span class="line">      	 <span class="keyword">if</span>(smlng&lt;_point.lng &amp;&amp; _point.lng&lt;bglng &amp;&amp; smlat&lt;_point.lat &amp;&amp; _point.lat &lt; bglat)&#123;</span><br><span class="line">               <span class="comment">//显示                               </span></span><br><span class="line">               listshow.push(labelsHasAdded[i]);     <span class="comment">// 如果从labels里添加了501个，listshow一定会大于501，所以不会显示            </span></span><br><span class="line">           &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">               <span class="comment">//不显示</span></span><br><span class="line">               listhide.push(labelsHasAdded[i]);</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">if</span>(listshow.length&lt;<span class="number">500</span>)&#123;</span><br><span class="line">      	 <span class="keyword">for</span>(<span class="keyword">var</span> i=<span class="number">0</span>;i&lt;listshow.length;i++)&#123;</span><br><span class="line">      		<span class="comment">//如果之前被隐藏则显示</span></span><br><span class="line">               <span class="keyword">if</span>(!listshow[i].isVisible())&#123;</span><br><span class="line">              	 listshow[i].show();</span><br><span class="line">               &#125;</span><br><span class="line">      	 &#125;</span><br><span class="line">       &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">      	 <span class="keyword">for</span>(<span class="keyword">var</span> i=<span class="number">0</span>;i&lt;listshow.length;i++)&#123;</span><br><span class="line">       		<span class="comment">//如果之前显示则隐藏</span></span><br><span class="line">                <span class="keyword">if</span>(listshow[i].isVisible())&#123;</span><br><span class="line">               	 listshow[i].hide();</span><br><span class="line">                &#125;</span><br><span class="line">       	 &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="comment">//返回显示的数量与隐藏的数量				 </span></span><br><span class="line">       <span class="keyword">return</span>&#123;</span><br><span class="line">           listshow:listshow,</span><br><span class="line">           listhide:listhide</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">addMarkers</span>(<span class="params">data, paramValue</span>)</span>&#123;</span><br><span class="line">	<span class="built_in">console</span>.time(<span class="string">'addpoint'</span>); <span class="comment">// 打印一下加载时间</span></span><br><span class="line">  <span class="built_in">window</span>[<span class="string">"map"</span>+<span class="string">"[[$&#123;formID&#125;]]"</span>].clearOverlays();</span><br><span class="line"><span class="keyword">var</span> pointLonMin = <span class="number">180</span>; <span class="comment">// 最小经度</span></span><br><span class="line"><span class="keyword">var</span> pointLonMax = <span class="number">0</span>; <span class="comment">// 最大经度</span></span><br><span class="line"><span class="keyword">var</span> pointLatMin = <span class="number">90</span>; <span class="comment">// 最小纬度</span></span><br><span class="line"><span class="keyword">var</span> pointLatMax = <span class="number">0</span>; <span class="comment">// 最大纬度		</span></span><br><span class="line"><span class="keyword">var</span> pointsOnline = []; <span class="comment">// 在线点位</span></span><br><span class="line"><span class="keyword">var</span> pointsOffline = []; <span class="comment">// 离线点位</span></span><br><span class="line">labels = [];</span><br><span class="line">labelsHasAdded = [];</span><br><span class="line"><span class="keyword">if</span> (<span class="built_in">document</span>.createElement(<span class="string">'canvas'</span>).getContext) &#123;  </span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; data.length; i++) &#123;				</span><br><span class="line">		<span class="keyword">if</span> (pointLonMin &gt; data[i].pointLon) &#123; <span class="comment">// 取经度最小的点</span></span><br><span class="line">			pointLonMin = data[i].pointLon;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (pointLonMax &lt; data[i].pointLon) &#123; <span class="comment">// 取经度最大的点</span></span><br><span class="line">			pointLonMax = data[i].pointLon;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (pointLatMin &gt; data[i].pointLat) &#123; <span class="comment">// 取纬度最小的点</span></span><br><span class="line">			pointLatMin = data[i].pointLat;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (pointLatMax &lt; data[i].pointLat) &#123; <span class="comment">// 取纬度最大的点</span></span><br><span class="line">			pointLatMax = data[i].pointLat;</span><br><span class="line">		&#125;		</span><br><span class="line">		<span class="keyword">if</span>(data[i].onlineStatus == <span class="string">"00"</span>)&#123;</span><br><span class="line">			pointsOnline.push(<span class="keyword">new</span> BMap.Point(data[i].pointLon, data[i].pointLat));</span><br><span class="line">		&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">			pointsOffline.push(<span class="keyword">new</span> BMap.Point(data[i].pointLon, data[i].pointLat));</span><br><span class="line">		&#125;			    </span><br><span class="line"></span><br><span class="line">         <span class="comment">// 添加标签，可显示不同的标签</span></span><br><span class="line">         <span class="keyword">if</span>(paramValue == <span class="string">"1"</span>)&#123;</span><br><span class="line">        	 <span class="keyword">var</span> point = <span class="keyword">new</span> BMap.Point(data[i].pointLon, data[i].pointLat);</span><br><span class="line">	         <span class="keyword">var</span> opts = &#123;</span><br><span class="line">	        		  position : point,    <span class="comment">// 指定文本标注所在的地理位置</span></span><br><span class="line">	        		  offset   : <span class="keyword">new</span> BMap.Size(<span class="number">7</span>,<span class="number">-25</span>)    <span class="comment">//设置文本偏移量</span></span><br><span class="line">	        		&#125;</span><br><span class="line">	         <span class="keyword">var</span> label = <span class="keyword">new</span> BMap.Label(data[i].pointNum, opts);</span><br><span class="line">	         labels.push(label);</span><br><span class="line">         &#125;<span class="keyword">else</span> <span class="keyword">if</span>(paramValue == <span class="string">"2"</span>)&#123;</span><br><span class="line">        	 <span class="keyword">var</span> point = <span class="keyword">new</span> BMap.Point(data[i].pointLon, data[i].pointLat);</span><br><span class="line">	         <span class="keyword">var</span> opts = &#123;</span><br><span class="line">	        		  position : point,    <span class="comment">// 指定文本标注所在的地理位置</span></span><br><span class="line">	        		  offset   : <span class="keyword">new</span> BMap.Size(<span class="number">15</span>,<span class="number">-20</span>)    <span class="comment">//设置文本偏移量</span></span><br><span class="line">	        		&#125;</span><br><span class="line">	         <span class="keyword">var</span> label = <span class="keyword">new</span> BMap.Label(data[i].pointName, opts);</span><br><span class="line">	         labels.push(label);</span><br><span class="line">         &#125;		         </span><br><span class="line">       &#125;		</span><br><span class="line">	  <span class="built_in">console</span>.time(<span class="string">'addlabels'</span>);</span><br><span class="line">	  <span class="comment">// 添加文本标记</span></span><br><span class="line">	  <span class="keyword">if</span>(labels.length&lt;<span class="number">500</span>)&#123;</span><br><span class="line">		  <span class="keyword">for</span>(i <span class="keyword">in</span> labels)&#123;				  </span><br><span class="line">			   <span class="built_in">window</span>[<span class="string">"map"</span>+<span class="string">"[[$&#123;formID&#125;]]"</span>].addOverlay(labels[i]);</span><br><span class="line">			   labelsHasAdded.push(labels[i]);</span><br><span class="line">			   <span class="keyword">delete</span> labels[i];</span><br><span class="line">		   &#125; 				  </span><br><span class="line">	  &#125;				 </span><br><span class="line">	   <span class="built_in">console</span>.timeEnd(<span class="string">'addlabels'</span>);</span><br><span class="line">       <span class="keyword">var</span> optionsOnline = &#123;</span><br><span class="line">	           size: BMAP_POINT_SIZE_NORMAL,</span><br><span class="line">	           shape: BMAP_POINT_SHAPE_CIRCLE,</span><br><span class="line">	           color: <span class="string">'#33cc33'</span></span><br><span class="line">	       &#125;</span><br><span class="line">        <span class="comment">//在线的点绿色</span></span><br><span class="line">       <span class="keyword">var</span> pointCollectionOnline = <span class="keyword">new</span> BMap.PointCollection(pointsOnline, optionsOnline);  <span class="comment">// 初始化PointCollection(在线)</span></span><br><span class="line">       <span class="keyword">var</span> optionsOffline = &#123;</span><br><span class="line">	           size: BMAP_POINT_SIZE_NORMAL,</span><br><span class="line">	           shape: BMAP_POINT_SHAPE_CIRCLE,</span><br><span class="line">	           color: <span class="string">'#ff6633'</span></span><br><span class="line">	       &#125;</span><br><span class="line">        <span class="comment">// 不在线的点橙色</span></span><br><span class="line">       <span class="keyword">var</span> pointCollectionOffline = <span class="keyword">new</span> BMap.PointCollection(pointsOffline, optionsOffline);  <span class="comment">// 初始化PointCollection(在线)  		</span></span><br><span class="line">       pointCollectionOnline.addEventListener(<span class="string">'click'</span>, <span class="function"><span class="keyword">function</span> (<span class="params">e</span>) </span>&#123;</span><br><span class="line">    	    <span class="comment">// 循环查出值</span></span><br><span class="line">			<span class="keyword">for</span> (<span class="keyword">var</span> j = <span class="number">0</span>; j &lt; data.length; j++) &#123;							</span><br><span class="line">				<span class="keyword">if</span>(data[j].pointLon==e.point.lng&amp;&amp;data[j].pointLat==e.point.lat)&#123;<span class="comment">// 经度==点击的,维度</span></span><br><span class="line">					<span class="keyword">break</span>;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">var</span> point = <span class="keyword">new</span> BMap.Point(e.point.lng, e.point.lat);		  		</span><br><span class="line">			<span class="keyword">var</span> content = <span class="string">""</span>;</span><br><span class="line">   			<span class="keyword">if</span>(data[j].offlineReason == <span class="literal">undefined</span>)&#123;</span><br><span class="line">   				data[j].offlineReason = <span class="string">""</span>;</span><br><span class="line">   			&#125;</span><br><span class="line">   			content = <span class="string">"&lt;ul style='list-style: none'&gt;"</span></span><br><span class="line">   					+ <span class="string">"&lt;li&gt;点位名称:"</span> + data[j].pointName + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">   					+ <span class="string">"&lt;li&gt;点位位置:"</span> + data[j].pointAddr + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">   					+ <span class="string">"&lt;li&gt;点位状态:"</span> + data[j].onlineStatusName + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">   					+ <span class="string">"&lt;li&gt;掉线原因:"</span> + data[j].offlineReason + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">   					+ <span class="string">"&lt;li&gt;经度:"</span> + data[j].pointLon + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">   					+ <span class="string">"&lt;li&gt;纬度:"</span> + data[j].pointLat + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">   					+ <span class="string">"&lt;li&gt;点位号:"</span> + data[j].pointNum + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">   					+ <span class="string">'&lt;a href="javascript:showPointDetail(\''</span>+data[j].pointInfoId+<span class="string">'\',\'展示《'</span>+data[j].pointName+<span class="string">'》详情信息\',\'[[$&#123;formID&#125;]] \')"&gt;详细信息&lt;/a&gt;'</span></span><br><span class="line">   					+ <span class="string">'&lt;a style="float:right;" href="javascript:editPointDetail(\''</span>+data[j].pointInfoId+<span class="string">'\',\'修改《'</span>+data[j].pointName +<span class="string">'》详情信息\',\'[[$&#123;formID&#125;]] \')"&gt;修改&lt;/a&gt;'</span></span><br><span class="line">   					+<span class="string">"&lt;/ul&gt;"</span>;		   			</span><br><span class="line">  			<span class="keyword">var</span> infoWindow = <span class="keyword">new</span> BMap.InfoWindow(content);  <span class="comment">// 创建信息窗口对象</span></span><br><span class="line">  			<span class="built_in">window</span>[<span class="string">"map"</span>+<span class="string">"[[$&#123;formID&#125;]]"</span>].openInfoWindow(infoWindow,point); <span class="comment">//开启信息窗口</span></span><br><span class="line">          &#125;);</span><br><span class="line">       pointCollectionOffline.addEventListener(<span class="string">'click'</span>, <span class="function"><span class="keyword">function</span> (<span class="params">e</span>) </span>&#123;</span><br><span class="line">    	    <span class="comment">// 循环查出值</span></span><br><span class="line">			<span class="keyword">for</span> (<span class="keyword">var</span> j = <span class="number">0</span>; j &lt; data.length; j++) &#123;							</span><br><span class="line">				<span class="keyword">if</span>(data[j].pointLon==e.point.lng&amp;&amp;data[j].pointLat==e.point.lat)&#123;<span class="comment">// 经度==点击的,维度</span></span><br><span class="line">					<span class="keyword">break</span>;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">var</span> point = <span class="keyword">new</span> BMap.Point(e.point.lng, e.point.lat);		  		</span><br><span class="line">			<span class="keyword">var</span> content = <span class="string">""</span>;</span><br><span class="line">   			<span class="keyword">if</span>(data[j].offlineReason == <span class="literal">undefined</span>)&#123;</span><br><span class="line">   				data[j].offlineReason = <span class="string">""</span>;</span><br><span class="line">   			&#125;</span><br><span class="line">   			content = <span class="string">"&lt;ul style='list-style: none'&gt;"</span></span><br><span class="line">   					+ <span class="string">"&lt;li&gt;点位名称:"</span> + data[j].pointName + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">   					+ <span class="string">"&lt;li&gt;点位位置:"</span> + data[j].pointAddr + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">   					+ <span class="string">"&lt;li&gt;点位状态:"</span> + data[j].onlineStatusName + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">   					+ <span class="string">"&lt;li&gt;掉线原因:"</span> + data[j].offlineReason + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">   					+ <span class="string">"&lt;li&gt;经度:"</span> + data[j].pointLon + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">   					+ <span class="string">"&lt;li&gt;纬度:"</span> + data[j].pointLat + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">   					+ <span class="string">"&lt;li&gt;点位号:"</span> + data[j].pointNum + <span class="string">"&lt;/li&gt;"</span></span><br><span class="line">   					+ <span class="string">'&lt;a href="javascript:showPointDetail(\''</span>+data[j].pointInfoId+<span class="string">'\',\'展示《'</span>+data[j].pointName+<span class="string">'》详情信息\',\'[[$&#123;formID&#125;]] \')"&gt;详细信息&lt;/a&gt;'</span></span><br><span class="line">   					+ <span class="string">'&lt;a style="float:right;" href="javascript:editPointDetail(\''</span>+data[j].pointInfoId+<span class="string">'\',\'修改《'</span>+data[j].pointName +<span class="string">'》详情信息\',\'[[$&#123;formID&#125;]] \')"&gt;修改&lt;/a&gt;'</span></span><br><span class="line">   					+<span class="string">"&lt;/ul&gt;"</span>;		   			</span><br><span class="line">  			<span class="keyword">var</span> infoWindow = <span class="keyword">new</span> BMap.InfoWindow(content);  <span class="comment">// 创建信息窗口对象</span></span><br><span class="line">  			<span class="built_in">window</span>[<span class="string">"map"</span>+<span class="string">"[[$&#123;formID&#125;]]"</span>].openInfoWindow(infoWindow,point); <span class="comment">//开启信息窗口</span></span><br><span class="line">          &#125;);</span><br><span class="line">        <span class="built_in">window</span>[<span class="string">"map"</span>+<span class="string">"[[$&#123;formID&#125;]]"</span>].addOverlay(pointCollectionOnline);  <span class="comment">// 添加Overlay</span></span><br><span class="line">        <span class="built_in">window</span>[<span class="string">"map"</span>+<span class="string">"[[$&#123;formID&#125;]]"</span>].addOverlay(pointCollectionOffline);  <span class="comment">// 添加Overlay</span></span><br><span class="line"> &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">       alert(<span class="string">'请在chrome、safari、IE8+以上浏览器查看本示例'</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  	<span class="keyword">var</span> zoom = getZoom(pointLonMax, pointLonMin, pointLatMax, pointLatMin);</span><br><span class="line"><span class="keyword">var</span> lonCenter = (<span class="built_in">parseFloat</span>(pointLonMax) + <span class="built_in">parseFloat</span>(pointLonMin)) / <span class="number">2</span>;</span><br><span class="line"><span class="keyword">var</span> latCenter = (<span class="built_in">parseFloat</span>(pointLatMax) + <span class="built_in">parseFloat</span>(pointLatMin)) / <span class="number">2</span>;</span><br><span class="line"><span class="keyword">if</span> (pointLonMax != <span class="number">0</span> &amp;&amp; pointLatMax != <span class="number">0</span>) &#123;</span><br><span class="line">	<span class="keyword">var</span> pointCenter = <span class="keyword">new</span> BMap.Point(lonCenter, latCenter);<span class="comment">//定义一个中心点坐标</span></span><br><span class="line">	<span class="built_in">window</span>[<span class="string">"map"</span>+<span class="string">"[[$&#123;formID&#125;]]"</span>].centerAndZoom(pointCenter, zoom);<span class="comment">//设定地图的中心点和坐标并将地图显示在地图容器中</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">console</span>.timeEnd(<span class="string">'addpoint'</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>supportman
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://supportmen.github.io/js/%E7%99%BE%E5%BA%A6%E5%9C%B0%E5%9B%BE/%E7%99%BE%E5%BA%A6%E5%9C%B0%E5%9B%BEapi%E5%8A%A0%E8%BD%BD%E5%A4%A7%E9%87%8F%E7%82%B9%E4%BD%8D%E5%8D%A1%E9%A1%BF%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" title="百度地图api加载大量点位卡顿问题解决方案">http://supportmen.github.io/js/百度地图/百度地图api加载大量点位卡顿问题解决方案/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/js/" rel="tag"># js</a>
+              <a href="/tags/%E7%99%BE%E5%BA%A6%E5%9C%B0%E5%9B%BE/" rel="tag"># 百度地图</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/js/%E7%99%BE%E5%BA%A6%E5%9C%B0%E5%9B%BE/%E3%80%90%E8%BD%AC%E8%BD%BD%E3%80%91%E7%99%BE%E5%BA%A6%E5%9C%B0%E5%9B%BEMarker%E4%BC%98%E5%8C%96%E6%96%B9%E6%A1%88/" rel="prev" title="【转载】百度地图Marker优化方案">
+      <i class="fa fa-chevron-left"></i> 【转载】百度地图Marker优化方案
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/Computer/%E4%B8%8D%E8%83%BD%E8%87%AA%E5%8A%A8%E6%91%98%E8%A6%81%EF%BC%9FNext%E4%B8%BB%E9%A2%98%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%B8%AD%E6%B2%A1%E6%9C%89auto_excerpt%E7%9A%84%E5%A4%84%E7%90%86/" rel="next" title="不能自动摘要？Next主题配置文件中没有auto_excerpt的处理">
+      不能自动摘要？Next主题配置文件中没有auto_excerpt的处理 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解决方案"><span class="nav-number">2.</span> <span class="nav-text">解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#技术一：加载海量点"><span class="nav-number">2.1.</span> <span class="nav-text">技术一：加载海量点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#技术二：动态加载label"><span class="nav-number">2.2.</span> <span class="nav-text">技术二：动态加载label</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">supportman</p>
+  <div class="site-description" itemprop="description">supportman的个人博客</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">16</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">supportman</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
